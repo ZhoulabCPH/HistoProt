@@ -1,0 +1,4 @@
+from .alignment import FeatureAlignmentResult
+from .deconvolution_core import run_tangram_cell_type_deconvolution, attach_deconvolution_results
+from .visualization import render_cell_type_abundance_figure, save_deconvolved_adata
+

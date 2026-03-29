@@ -1,0 +1,65 @@
+# HistoProt training configuration
+#
+# Required data format
+# 1. protein_csv / function_csv:
+#    - CSV matrix with one feature per row and one specimen per column.
+#    - The first column or the configured *_id_column should store feature IDs.
+#    - Specimen columns should align with the clinical specimen IDs after any
+#      optional suffix stripping.
+#
+# 2. clinical_csv:
+#    - CSV table with at least one specimen identifier column and one slide
+#      identifier column.
+#    - If split_group_column is provided, nested cross-validation will be
+#      performed at that grouping level; otherwise it is performed at specimen
+#      level.
+#
+# 3. slide_feature_dir:
+#    - Directory containing one feather file per slide.
+#    - Each feather file should store patch features and a region label column
+#      specified by region_column.
+
+experiment:
+  name: "HistoProt_experiment"
+  seed: 0
+  device: "auto"
+  verbose: false
+
+data:
+  protein_csv: D:\PyCharm\pythonProject\HistoProt\datasets\proteomics/dreamai_9365_CPTAC_LUAD_matched_.csv
+  function_csv: D:\PyCharm\pythonProject\HistoProt\datasets\proteomics/dreamai_9365_CPTAC_LUAD_matched_HALLMARKER_.csv
+  clinical_csv: F:\CPTAC\CPTAC-LUAD\clinical_data/CPTAC_LUAD_clinical_data.csv
+  slide_feature_dir: F:\CPTAC\CPTAC-LUAD\patches_feature\CONCH_leiden_euclidean_region_0.95
+
+  protein_id_column: null
+  function_id_column: null
+  sample_id_suffix_to_strip: ""
+
+  specimen_id_column: "specimens_id"
+  slide_id_column: "slides_id"
+  split_group_column: null
+  region_column: "regions"
+  slide_file_suffix: ".feather"
+
+model:
+  dropout: 0.25
+  input_dim: 512
+  num_proteins: 9365
+  num_functions: 50
+  num_attention_heads: 1
+
+training:
+  epochs: 100
+  batch_size: 1
+  optimizer: "adamw"
+  learning_rate: 0.005
+  weight_decay: 0.01
+  warmup_epochs: 10
+  early_stop_patience: 10
+  outer_folds: 5
+  inner_folds: 5
+  num_workers: 0
+
+output:
+  checkpoint_dir: D:\PyCharm\pythonProject\HistoProt\checkpoints
+  save_predictions: true
