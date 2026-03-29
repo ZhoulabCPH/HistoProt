@@ -8,18 +8,11 @@ HistoProt (Histology-based Proteomic Profiler) is a unified histology-to-proteom
 The repository covers three major stages:
 
 1. `01_data_processing`: whole-slide tiling, foundation-model feature extraction, proteomics preprocessing, and functional gene-set preprocessing.
-2. `02_model_development`: hierarchical region construction, HistoProt training, checkpoint-based inference, and post-processing utilities.
+2. `02_model_development`: hierarchical structure construction, HistoProt training, checkpoint-based inference, and post-processing utilities.
 3. `03_downstream_analysis`: spatial proteomics reconstruction, marker/pathway visualization, cell type deconvolution, patch-embedding extraction, and niche identification.
 
 The codebase is written as a practical research workflow rather than a single monolithic package. Most scripts provide command-line interfaces for either single-slide or batch processing.
 
-## Highlights
-
-- Supports patch feature extraction from multiple pathology foundation models: `CONCH`, `CONCH_v1_5`, `UNI`, `UNI_v2`, and `Virchow2`.
-- Trains the `HistoProt` model with nested cross-validation and YAML-based configuration.
-- Predicts slide-level proteomic profiles and spatial patch-level proteomic profiles from slide patch features.
-- Exports standardized `AnnData` objects for downstream spatial analyses.
-- Includes downstream modules for spatial marker visualization, pathway activity profiling, Tangram-based cell type deconvolution, and niche discovery from patch embeddings.
 
 ## Repository Layout
 
@@ -119,7 +112,7 @@ This directory structure is consumed by `get_foundation_model_features.py`, whic
 
 ```bash
 python 01_data_processing/get_foundation_model_features.py \
-  --model UNI_v2 \
+  --model CONCH \
   --input_dir ./dataset/patches \
   --output_dir ./dataset/slides_features
 ```
@@ -146,9 +139,9 @@ Rscript 01_data_processing/functional_gene_set_enrichment.R
 
 ### 02_model_development
 
-This stage converts patch features into region-aware slide representations, trains HistoProt, and generates slide-level digital proteomic profiles.
+This stage converts WSIs into hierarchical representations, trains HistoProt, and generates slide-level digital proteomic profiles.
 
-#### 02.1 Construct hierarchical region assignments
+#### 02.1 Construct hierarchical WSI representation
 
 Before hierarchical structure construction, each slide should already be represented as one Feather table containing patch-level feature vectors. Patch identifiers should be stored either as the table index or as a dedicated patch-name column. After foundation-model extraction, a typical slide table is organized as follows:
 
@@ -159,12 +152,12 @@ slide_A_(23.0,18.0).jpg             0.1321     -0.1442    ...  0.0213
 slide_A_(23.0,19.0).jpg             0.0954     -0.1887    ...  0.0149
 ```
 
-`convert_hierarchical_structure.py` augments this representation with region assignments, producing the region-aware slide feature files used by HistoProt.
+`convert_hierarchical_structure.py` augments this representation with region assignments, producing the hierarchical WSI structure files used by HistoProt.
 
 ```bash
 python 02_model_development/convert_hierarchical_structure.py \
-  --input_dir ./dataset/slides_features/UNI_v2 \
-  --output_dir ./dataset/slides_features/UNI_v2_regions
+  --input_dir ./dataset/slides_features/CONCH \
+  --output_dir ./dataset/slides_features/CONCH_convert
 ```
 
 #### 02.2 Train HistoProt
@@ -174,7 +167,7 @@ Before model training, prepare four aligned inputs:
 1. A protein target matrix.
 2. A functional target matrix.
 3. A clinical metadata table linking specimens and slides.
-4. A directory of region-annotated slide feature Feather files from Section 02.1.
+4. A directory of hierarchical WSI feature Feather files from Section 02.1.
 
 The clinical table should contain at least one specimen identifier column and one slide identifier column. An optional grouping column can be provided for nested cross-validation.
 
@@ -185,7 +178,7 @@ specimen_002,slide_B,patient_02,group_1
 specimen_003,slide_C,patient_03,group_2
 ```
 
-At this stage, each region-annotated slide feature table should typically contain patch identifiers, patch-level embedding features, and one region label column:
+At this stage, each slide feature table should typically contain patch identifiers, patch-level embedding features, and one region label column:
 
 ```text
 index / patch_name                  feat_0001  feat_0002  ...  feat_0512  regions
@@ -203,7 +196,7 @@ python 02_model_development/train.py \
 
 #### 02.3 Predict slide-level digital proteomic profiles
 
-Slide-level inference uses the trained checkpoints together with the same region-annotated slide feature directory used for training. If `--protein_index_file` is not provided, the prediction output columns are derived from the first column of the training `protein_csv` specified in `config.yaml`.
+Slide-level inference uses the trained checkpoints together with the same slide feature directory used for training. If `--protein_index_file` is not provided, the prediction output columns are derived from the first column of the training `protein_csv` specified in `config.yaml`.
 
 Ensemble inference over all recursively discovered `checkpoint_best_validation.pth` files:
 
@@ -214,7 +207,7 @@ python 02_model_development/inference_results.py \
   --output_dir ./checkpoints/results \
   --ensemble \
   batch \
-  --slide_feature_dir ./dataset/slides_features/UNI_v2_regions
+  --slide_feature_dir ./dataset/slides_features/CONCH_convert
 ```
 
 This writes `ensemble_results.csv`, where rows are slides and columns are predicted proteins. These slide-level outputs correspond to the digital proteomic profiles generated by HistoProt.
@@ -233,11 +226,11 @@ python 02_model_development/convert_prediction_protein_accession_to_gene_name.py
 
 ### 03_downstream_analysis
 
-This stage starts from trained HistoProt checkpoints and region-aware slide features. The primary entry point is `custom_analysis/inference_spatial_results.py`, which reconstructs both digital proteomic profiles and patch-level in silico spatial proteomics, and stores them in a standardized `AnnData` structure. Once this `AnnData` representation is available, users can run the downstream modules included in this repository or perform custom analyses such as prognosis modeling, pathway enrichment, network analysis, spatial neighborhood analysis, or other spatial proteomics workflows.
+This stage starts from trained HistoProt checkpoints and hierarchical WSI features. The primary entry point is `custom_analysis/inference_spatial_results.py`, which reconstructs both digital proteomic profiles and patch-level in silico spatial proteomics, and stores them in a standardized `AnnData` structure. Once this `AnnData` representation is available, users can run the downstream modules included in this repository or perform custom analyses such as prognosis modeling, pathway enrichment, network analysis, spatial neighborhood analysis, or other spatial proteomics workflows.
 
 #### 03.1 Generate `AnnData` with digital proteomic profiles and in silico spatial proteomics
 
-Spatial inference consumes the same region-annotated slide feature files used in model development and writes one `.h5ad` file per slide. Each resulting AnnData object is designed for downstream spatial analysis and typically contains:
+Spatial inference consumes the same hierarchical WSI feature files used in model development and writes one `.h5ad` file per slide. Each resulting AnnData object is designed for downstream spatial analysis and typically contains:
 
 - `.X`: patch-level in silico spatial proteomics
 - `obs["patch_name"]`
@@ -253,7 +246,7 @@ python 03_downstream_analysis/custom_analysis/inference_spatial_results.py \
   --output_dir ./checkpoints/spatial_results \
   --ensemble \
   batch \
-  --slide_feature_dir ./dataset/slides_features/UNI_v2_regions
+  --slide_feature_dir ./dataset/slides_features/CONCH_convert
 ```
 
 Each slide is saved as one `.h5ad` file and can serve as the starting point for arbitrary proteomics and spatial analyses.
@@ -296,7 +289,7 @@ python 03_downstream_analysis/cell_type_deconvolution/cell_type_deconvolution.py
 
 #### 03.5 Export model patch embeddings
 
-`inference_patch_embedding.py` uses the trained model checkpoints and the region-annotated slide feature files from Section 02.1. It exports one `.h5ad` file per slide, where `.X` stores patch embeddings instead of spatial proteomic predictions.
+`inference_patch_embedding.py` uses the trained model checkpoints and the hierarchical WSI slide feature files from Section 02.1. It exports one `.h5ad` file per slide, where `.X` stores patch embeddings instead of spatial proteomic predictions.
 
 ```bash
 python 03_downstream_analysis/niche_analysis/inference_patch_embedding.py \
@@ -305,7 +298,7 @@ python 03_downstream_analysis/niche_analysis/inference_patch_embedding.py \
   --output_dir ./checkpoints/patch_embeddings \
   --ensemble \
   batch \
-  --slide_feature_dir ./dataset/slides_features/UNI_v2_regions
+  --slide_feature_dir ./dataset/slides_features/CONCH_regions
 ```
 
 #### 03.6 Identify niches from patch embeddings
@@ -338,7 +331,7 @@ python 03_downstream_analysis/niche_analysis/niche_identification.py \
 ### 02_model_development
 
 - `convert_hierarchical_structure.py`
-  Builds region-level structure from patch features using spatial adjacency and Leiden clustering.
+  Builds hierarchical WSI representation using spatial adjacency and Leiden clustering.
 - `train.py`
   Runs HistoProt training using YAML-driven experiment, data, model, and output configuration.
 - `inference_results.py`
