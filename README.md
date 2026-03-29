@@ -230,7 +230,7 @@ This stage starts from trained HistoProt checkpoints and hierarchical WSI featur
 
 #### 03.1 Generate `AnnData` with digital proteomic profiles and in silico spatial proteomics
 
-Spatial inference consumes the same hierarchical WSI feature files used in model development and writes one `.h5ad` file per slide. Each resulting AnnData object is designed for downstream spatial analysis and typically contains:
+Spatial inference consumes the same hierarchical WSI representation files used in model development and writes one `.h5ad` file per slide. Each resulting AnnData object is designed for downstream spatial analysis and typically contains:
 
 - `.X`: patch-level in silico spatial proteomics
 - `obs["patch_name"]`
@@ -289,7 +289,7 @@ python 03_downstream_analysis/cell_type_deconvolution/cell_type_deconvolution.py
 
 #### 03.5 Export model patch embeddings
 
-`inference_patch_embedding.py` uses the trained model checkpoints and the hierarchical WSI slide feature files from Section 02.1. It exports one `.h5ad` file per slide, where `.X` stores patch embeddings instead of spatial proteomic predictions.
+`inference_patch_embedding.py` uses the trained model checkpoints and the hierarchical WSI slide representation files from Section 02.1. It exports one `.h5ad` file per slide, where `.X` stores patch embeddings instead of spatial proteomic predictions.
 
 ```bash
 python 03_downstream_analysis/niche_analysis/inference_patch_embedding.py \
