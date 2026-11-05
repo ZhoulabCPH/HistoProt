@@ -95,6 +95,8 @@ Proteomics preprocessing and functional gene-set scoring use **R 4.4.1**, with t
 
 DreamAI was installed from `WangLab-MSSM/DreamAI` at Git commit `e6265a713d6dd5cb7abe94e5a39aff5977656c45`.
 
+**Typical installation time:** Installing the Python and R dependencies is estimated to take approximately 30–60 minutes on a standard desktop computer, depending on network speed and package compilation requirements. This estimate excludes data and model-weight downloads.
+
 ## Quick start
 
 Publicly available source data can be accessed through the repositories referenced in the corresponding original publications. We provide download links for the CPTAC lung squamous cell carcinoma (CPTAC-LSCC) cohort as an example, together with processed demonstration data.
@@ -110,6 +112,8 @@ Publicly available source data can be accessed through the repositories referenc
 Pretrained HistoProt model weights for all cancer types included in this study are available in the same [Google Drive folder](https://drive.google.com/drive/folders/1gnLNYrdpPoT4IneQ3g3w2DzwEFQK6BzW?usp=drive_link).
 
 Following the workflow described in this repository, users can train HistoProt from scratch on their own datasets, reproduce the analyses, or apply the pretrained models to their own data for inference and downstream analyses of interest.
+
+**Expected demo runtime:** The complete inference workflow for a single slide takes approximately 5 minutes on a system with an NVIDIA Tesla V100 GPU and an Intel Xeon Gold 5215 CPU @ 2.50 GHz. Runtime may vary with hardware, slide size, and the number of model checkpoints used.
 
 ## Workflow
 
